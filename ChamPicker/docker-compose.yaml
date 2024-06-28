@@ -1,0 +1,39 @@
+version: "1.0"
+
+services:
+
+  spring:
+    build:
+      context: .
+      dockerfile: $DOCKERFILE
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+
+  db:
+    container_name: postgres
+    image: postgres:alpine3.19
+    environment:
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_DB: ${DATABASE_NAME}
+
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: [ "CMD", 'psql', '-U', "Zounkla", 'main' ]
+      timeout: 2s
+      retries: 5
+    volumes:
+      - data-vol:/data/db
+
+volumes:
+  app:
+  data-vol:

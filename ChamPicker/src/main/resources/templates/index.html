@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>ChamPicker</title>
+    <meta charset="UTF-8"/>
+</head>
+<body>
+    <form th:if="${duo != null}" action="postMatches" th:action="@{/postMatches}"
+          th:object="${duo}" method="POST">
+        <p>Summoner 1:</p>
+        <label>
+            Summoner name:
+            <input type="text" th:field="${duo.firstSummoner.gameName}">
+        </label>
+        <label>
+            Game tag:
+            <input type="text" th:field="${duo.firstSummoner.gameTag}">
+        </label>
+
+        <p>Summoner 2:</p>
+        <label>
+            Summoner name:
+            <input type="text" th:field="${duo.secondSummoner.gameName}">
+        </label>
+        <label>
+            Game tag:
+            <input type="text" th:field="${duo.secondSummoner.gameTag}">
+        </label>
+        <button type="submit">Refresh data</button>
+    </form>
+
+    <form th:if="${champion != null}" action="getChampion" th:action="@{/getChampion}"
+          method="GET" th:object="${champion}">
+        <label>
+            Champion name:
+            <input type="text" th:field="${champion.name}">
+        </label>
+        <button type="submit">Get Champion!</button>
+    </form>
+
+    <div th:if="${name != null}" th:text="${name}">
+
+    </div>
+</body>
+</html>
