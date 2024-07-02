@@ -29,11 +29,20 @@
         <button type="submit">Refresh data</button>
     </form>
 
-    <form th:if="${champion != null}" action="getChampion" th:action="@{/getChampion}"
-          method="GET" th:object="${champion}">
+    <form th:if="${firstChampion != null}" action="getFirstChampion" th:action="@{/getFirstChampion}"
+          method="GET" th:object="${firstChampion}">
         <label>
-            Champion name:
-            <input type="text" th:field="${champion.name}">
+            Second player champion name:
+            <input type="text" th:field="${firstChampion.name}">
+        </label>
+        <button type="submit">Get Champion!</button>
+    </form>
+
+    <form th:if="${secondChampion != null}" action="getSecondChampion" th:action="@{/getSecondChampion}"
+          method="GET" th:object="${secondChampion}">
+        <label>
+            First player champion name:
+            <input type="text" th:field="${secondChampion.name}">
         </label>
         <button type="submit">Get Champion!</button>
     </form>

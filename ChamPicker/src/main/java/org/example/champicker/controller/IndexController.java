@@ -21,7 +21,8 @@ public class IndexController {
         duo.setFirstSummoner(new Summoner());
         duo.setSecondSummoner(new Summoner());
         model.addAttribute("duo", duo);
-        model.addAttribute("champion", new Champion());
+        model.addAttribute("firstChampion", new Champion());
+        model.addAttribute("secondChampion", new Champion());
         return "index";
     }
 }

@@ -15,9 +15,17 @@ public class GetController {
     @Autowired
     private Service service;
 
-    @GetMapping("/getChampion")
-    public String getChampion(@ModelAttribute("champion") Champion secondChampion, Model model) {
-        model.addAttribute("name", service.bestDuoWith(secondChampion.getName()).getName());
+    @GetMapping("/getFirstChampion")
+    public String getFirstChampion(@ModelAttribute("champion") Champion secondChampion, Model model) {
+        model.addAttribute("name", service.bestDuoWith(secondChampion.getName(),
+                Service.FIRST_POSITION).getName());
+        return "index";
+    }
+
+    @GetMapping("/getSecondChampion")
+    public String getSecondChampion(@ModelAttribute("champion") Champion firstChampion, Model model) {
+        model.addAttribute("name", service.bestDuoWith(firstChampion.getName(),
+                Service.SECOND_POSITION).getName());
         return "index";
     }
 }

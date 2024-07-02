@@ -1,9 +1,5 @@
 package org.example.champicker.service;
 
-import com.merakianalytics.orianna.Orianna;
-import com.merakianalytics.orianna.types.common.Region;
-import com.merakianalytics.orianna.types.core.staticdata.Champions;
-import net.sf.saxon.expr.Component;
 import org.example.champicker.model.entity.Champion;
 import org.example.champicker.model.entity.Match;
 import org.example.champicker.model.entity.MatchUp;
@@ -19,15 +15,17 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
 @org.springframework.stereotype.Service
 public class Service {
+
+    public static final int FIRST_POSITION = 1;
+
+    public static final int SECOND_POSITION = 2;
 
     @Value("${riot.api.key}")
     private String riotAPIKey;
@@ -160,28 +158,40 @@ public class Service {
         matchRepository.save(match);
     }
 
-    public Champion bestDuoWith(String championName) {
+    public Champion bestDuoWith(String championName, int position) {
         Optional<Champion> optionalChampion = championRepository.findById(championName);
         if (optionalChampion.isEmpty()) {
-            return bestChampion(championName);
+            return bestChampion(championName, position);
         }
         Champion champion = optionalChampion.get();
-        Optional<List<MatchUp>> optionalMatchUps  = matchUpRepository.getMatchUpsBySecondChampion(champion);
+        Optional<List<MatchUp>> optionalMatchUps;
+        if (position == FIRST_POSITION) {
+            optionalMatchUps = matchUpRepository.getMatchUpsBySecondChampion(champion);
+        }  else {
+            optionalMatchUps = matchUpRepository.getMatchUpsByFirstChampion(champion);
+        }
         if (optionalMatchUps.isEmpty()) {
-            return bestChampion(championName);
+            return bestChampion(championName, position);
         }
         List<MatchUp> matchUps = optionalMatchUps.get();
         double rank = Double.POSITIVE_INFINITY;
         Champion result = null;
         for(MatchUp matchUp : matchUps) {
-            Champion firstChampion = matchUp.getFirstChampion();
-            double tmp = averageDuoRank(firstChampion, champion);
+            Champion otherChampion;
+            double tmp;
+            if (position == FIRST_POSITION) {
+                otherChampion = matchUp.getFirstChampion();
+                tmp = averageDuoRank(otherChampion, champion);
+            } else {
+                otherChampion = matchUp.getSecondChampion();
+                tmp = averageDuoRank(champion, otherChampion);
+            }
             if (tmp < rank && tmp >= 1.0) {
-                result = firstChampion;
+                result = otherChampion;
                 rank = tmp;
             }
         }
-        return rank <= 4.0 ? result : bestChampion(championName);
+        return rank <= 4.0 ? result : bestChampion(championName, position);
     }
 
     private double averageDuoRank(Champion firstChampion, Champion secondChampion) {
@@ -202,13 +212,18 @@ public class Service {
     }
 
 
-    private double averageChampionRank(String championName) {
+    private double averageChampionRank(String championName, int position) {
         Optional<Champion> optionalChampion = championRepository.findById(championName);
         if (optionalChampion.isEmpty()) {
             return 0.0;
         }
         Champion champion = optionalChampion.get();
-        Optional<List<MatchUp>> optionalMatchUps  = matchUpRepository.getMatchUpsByFirstChampion(champion);
+        Optional<List<MatchUp>> optionalMatchUps;
+        if (position == FIRST_POSITION) {
+            optionalMatchUps = matchUpRepository.getMatchUpsByFirstChampion(champion);
+        } else  {
+            optionalMatchUps = matchUpRepository.getMatchUpsBySecondChampion(champion);
+        }
         if (optionalMatchUps.isEmpty()) {
             return 0.0;
         }
@@ -223,7 +238,7 @@ public class Service {
         return averageRank / matchUps.size();
     }
 
-    private Champion bestChampion(String championName) {
+    private Champion bestChampion(String championName, int position) {
         Iterable<Champion> champions = championRepository.findAll();
         double rank = Double.POSITIVE_INFINITY;
         Champion result = null;
@@ -231,7 +246,7 @@ public class Service {
             if (championName.equals(champion.getName())) {
                 continue;
             }
-            double tmp = averageChampionRank(champion.getName());
+            double tmp = averageChampionRank(champion.getName(), position);
             if (tmp >= 1.0 && tmp < rank) {
                 rank = tmp;
                 result = champion;
