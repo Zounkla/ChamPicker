@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @SpringBootApplication
 @Component
 public class ChamPickerApplication {
-	private static final String riotAPIKey = "RGAPI-a732ab11-358b-493d-961c-747915abb1c2";
+	private static final String riotAPIKey = "<your API key>";
 	public static void main(String[] args) {
 		Orianna.loadConfiguration("config.json");
 		Orianna.setRiotAPIKey(riotAPIKey);
