@@ -6,43 +6,15 @@
 </head>
 <body>
     <form th:if="${duo != null}" action="postMatches" th:action="@{/postMatches}"
-          th:object="${duo}" method="POST">
-        <p>Summoner 1:</p>
-        <label>
-            Summoner name:
-            <input type="text" th:field="${duo.firstSummoner.gameName}">
-        </label>
-        <label>
-            Game tag:
-            <input type="text" th:field="${duo.firstSummoner.gameTag}">
-        </label>
-
-        <p>Summoner 2:</p>
-        <label>
-            Summoner name:
-            <input type="text" th:field="${duo.secondSummoner.gameName}">
-        </label>
-        <label>
-            Game tag:
-            <input type="text" th:field="${duo.secondSummoner.gameTag}">
-        </label>
+            method="POST" th:object="${duo}">
         <button type="submit">Refresh data</button>
     </form>
 
-    <form th:if="${firstChampion != null}" action="getFirstChampion" th:action="@{/getFirstChampion}"
-          method="GET" th:object="${firstChampion}">
+    <form th:if="${champion != null}" action="getChampion" th:action="@{/getChampion}"
+          method="GET" th:object="${champion}">
         <label>
-            Second player champion name:
-            <input type="text" th:field="${firstChampion.name}">
-        </label>
-        <button type="submit">Get Champion!</button>
-    </form>
-
-    <form th:if="${secondChampion != null}" action="getSecondChampion" th:action="@{/getSecondChampion}"
-          method="GET" th:object="${secondChampion}">
-        <label>
-            First player champion name:
-            <input type="text" th:field="${secondChampion.name}">
+            Your ally's champion name:
+            <input type="text" th:field="${champion.name}">
         </label>
         <button type="submit">Get Champion!</button>
     </form>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>ChamPicker</title>
+</head>
+<body>
+<form th:if="${duo != null}" action="publishChampionPage" th:action="@{/publishChampionPage}"
+      th:object="${duo}" method="POST">
+    <p>Summoner 1:</p>
+    <label>
+        Summoner name:
+        <input type="text" th:field="${duo.firstSummoner.gameName}">
+    </label>
+    <label>
+        Game tag:
+        <input type="text" th:field="${duo.firstSummoner.gameTag}">
+    </label>
+
+    <p>Summoner 2:</p>
+    <label>
+        Summoner name:
+        <input type="text" th:field="${duo.secondSummoner.gameName}">
+    </label>
+    <label>
+        Game tag:
+        <input type="text" th:field="${duo.secondSummoner.gameTag}">
+    </label>
+    <button type="submit">Confirm duo</button>
+</form>
+</body>
+</html>

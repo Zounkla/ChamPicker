@@ -1,11 +1,11 @@
 package org.example.champicker.service;
 
+import org.example.champicker.model.entity.Duo;
+import org.example.champicker.model.entity.Summoner;
 import org.example.champicker.model.entity.Champion;
 import org.example.champicker.model.entity.Match;
 import org.example.champicker.model.entity.MatchUp;
-import org.example.champicker.model.repository.ChampionRepository;
-import org.example.champicker.model.repository.MatchRepository;
-import org.example.champicker.model.repository.MatchUpRepository;
+import org.example.champicker.model.repository.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,10 +23,6 @@ import java.util.Optional;
 @org.springframework.stereotype.Service
 public class Service {
 
-    public static final int FIRST_POSITION = 1;
-
-    public static final int SECOND_POSITION = 2;
-
     @Value("${riot.api.key}")
     private String riotAPIKey;
 
@@ -36,12 +32,21 @@ public class Service {
 
     private final MatchRepository matchRepository;
 
+    private final DuoRepository duoRepository;
+
+    private final SummonerRepository summonerRepository;
+
     public Service(ChampionRepository championRepository,
                    MatchRepository matchRepository,
-                   MatchUpRepository matchUpRepository) {
+                   MatchUpRepository matchUpRepository,
+                   DuoRepository duoRepository,
+                   SummonerRepository summonerRepository
+                   ) {
         this.championRepository = championRepository;
         this.matchRepository = matchRepository;
         this.matchUpRepository = matchUpRepository;
+        this.summonerRepository = summonerRepository;
+        this.duoRepository = duoRepository;
     }
 
     public String getPUUIDFromName(String gameName, String tagLine) throws IOException {
@@ -93,9 +98,10 @@ public class Service {
     }
 
 
-    public void saveMatch(String matchId, String puuid, String secondPuuid) throws IOException {
+    public void saveMatch(String matchId, String puuid, String secondPuuid,
+                          Summoner firstSummoner, Summoner secondSummoner) throws IOException {
         matchId = matchId.replaceAll("\"", "");
-        if (matchRepository.findById(matchId).isPresent()) {
+        if (matchRepository.findByMatchIdAndSummoner(matchId, firstSummoner).isPresent()) {
             return;
         }
         URL url;
@@ -145,11 +151,20 @@ public class Service {
                 }
             }
         }
-        Optional<MatchUp> matchUp = matchUpRepository.getMatchUpByFirstChampionAndSecondChampion(first, second);
+        summonerRepository.save(firstSummoner);
+        summonerRepository.save(secondSummoner);
+        Optional<Duo> duo = duoRepository.findByFirstSummonerAndSecondSummoner(firstSummoner, secondSummoner);
+        Duo newDuo = duo.orElseGet(Duo::new);
+        newDuo.setFirstSummoner(firstSummoner);
+        newDuo.setSecondSummoner(secondSummoner);
+        duoRepository.save(newDuo);
+        Optional<MatchUp> matchUp = matchUpRepository.getMatchUpByDuoAndFirstChampionAndSecondChampion
+                (newDuo, first, second);
         MatchUp newMatchUP;
         newMatchUP = matchUp.orElseGet(MatchUp::new);
         newMatchUP.setFirstChampion(first);
         newMatchUP.setSecondChampion(second);
+        newMatchUP.setDuo(newDuo);
         int oldNb = newMatchUP.getTops().get(placement - 1);
         newMatchUP.getTops().set(placement - 1, oldNb + 1);
         matchUpRepository.save(newMatchUP);
@@ -158,45 +173,65 @@ public class Service {
         matchRepository.save(match);
     }
 
-    public Champion bestDuoWith(String championName, int position) {
+    public Champion bestDuoWith(String championName, Duo oldDuo) {
+        Optional<Summoner> optionalSummoner = summonerRepository.findByGameNameAndGameTag(
+                oldDuo.getFirstSummoner().getGameName(), oldDuo.getFirstSummoner().getGameTag()
+        );
+        Summoner firstSummoner;
+        if (optionalSummoner.isEmpty()) {
+            firstSummoner = new Summoner();
+            firstSummoner.setGameName(oldDuo.getFirstSummoner().getGameName());
+            firstSummoner.setGameTag(oldDuo.getFirstSummoner().getGameTag());
+            summonerRepository.save(firstSummoner);
+        }
+        optionalSummoner = summonerRepository.findByGameNameAndGameTag(
+                oldDuo.getSecondSummoner().getGameName(), oldDuo.getSecondSummoner().getGameTag()
+        );
+        Summoner secondSummoner;
+        if (optionalSummoner.isEmpty()) {
+            secondSummoner = new Summoner();
+            secondSummoner.setGameName(oldDuo.getSecondSummoner().getGameName());
+            secondSummoner.setGameTag(oldDuo.getSecondSummoner().getGameTag());
+            summonerRepository.save(secondSummoner);
+        }
+        Optional<Duo> optDuo = duoRepository.findByFirstSummonerAndSecondSummoner(oldDuo.getFirstSummoner(),
+                oldDuo.getSecondSummoner());
+        Duo duo;
+        if (optDuo.isEmpty()) {
+            duo = new Duo();
+            duo.setFirstSummoner(oldDuo.getFirstSummoner());
+            duo.setSecondSummoner(oldDuo.getSecondSummoner());
+            duoRepository.save(duo);
+        } else {
+            duo = optDuo.get();
+        }
         Optional<Champion> optionalChampion = championRepository.findById(championName);
         if (optionalChampion.isEmpty()) {
-            return bestChampion(championName, position);
+            return bestChampion(championName, duo);
         }
         Champion champion = optionalChampion.get();
-        Optional<List<MatchUp>> optionalMatchUps;
-        if (position == FIRST_POSITION) {
-            optionalMatchUps = matchUpRepository.getMatchUpsBySecondChampion(champion);
-        }  else {
-            optionalMatchUps = matchUpRepository.getMatchUpsByFirstChampion(champion);
-        }
+        Optional<List<MatchUp>> optionalMatchUps = matchUpRepository.getMatchUpsByDuoAndSecondChampion
+                (duo, champion);
         if (optionalMatchUps.isEmpty()) {
-            return bestChampion(championName, position);
+            return bestChampion(championName, duo);
         }
         List<MatchUp> matchUps = optionalMatchUps.get();
         double rank = Double.POSITIVE_INFINITY;
         Champion result = null;
         for(MatchUp matchUp : matchUps) {
-            Champion otherChampion;
-            double tmp;
-            if (position == FIRST_POSITION) {
-                otherChampion = matchUp.getFirstChampion();
-                tmp = averageDuoRank(otherChampion, champion);
-            } else {
-                otherChampion = matchUp.getSecondChampion();
-                tmp = averageDuoRank(champion, otherChampion);
-            }
+            Champion otherChampion = matchUp.getFirstChampion();
+            double tmp = averageDuoRank(duo, otherChampion, champion);
             if (tmp < rank && tmp >= 1.0) {
                 result = otherChampion;
                 rank = tmp;
             }
         }
-        return rank <= 4.0 ? result : bestChampion(championName, position);
+        return rank <= 4.0 ? result : bestChampion(championName, duo);
     }
 
-    private double averageDuoRank(Champion firstChampion, Champion secondChampion) {
-        Optional<MatchUp> matchUp = matchUpRepository.getMatchUpByFirstChampionAndSecondChampion(firstChampion,
-                secondChampion);
+    private double averageDuoRank(Duo duo, Champion firstChampion, Champion secondChampion) {
+        Optional<MatchUp> matchUp = matchUpRepository.getMatchUpByDuoAndFirstChampionAndSecondChampion
+                (duo, firstChampion, secondChampion);
         if (matchUp.isEmpty()) {
             return Double.POSITIVE_INFINITY;
         }
@@ -212,18 +247,14 @@ public class Service {
     }
 
 
-    private double averageChampionRank(String championName, int position) {
+    private double averageChampionRank(String championName, Duo duo) {
         Optional<Champion> optionalChampion = championRepository.findById(championName);
         if (optionalChampion.isEmpty()) {
             return 0.0;
         }
         Champion champion = optionalChampion.get();
-        Optional<List<MatchUp>> optionalMatchUps;
-        if (position == FIRST_POSITION) {
-            optionalMatchUps = matchUpRepository.getMatchUpsByFirstChampion(champion);
-        } else  {
-            optionalMatchUps = matchUpRepository.getMatchUpsBySecondChampion(champion);
-        }
+        Optional<List<MatchUp>> optionalMatchUps = matchUpRepository.getMatchUpsByDuoAndFirstChampion
+                (duo, champion);
         if (optionalMatchUps.isEmpty()) {
             return 0.0;
         }
@@ -238,7 +269,7 @@ public class Service {
         return averageRank / matchUps.size();
     }
 
-    private Champion bestChampion(String championName, int position) {
+    private Champion bestChampion(String championName, Duo duo) {
         Iterable<Champion> champions = championRepository.findAll();
         double rank = Double.POSITIVE_INFINITY;
         Champion result = null;
@@ -246,7 +277,7 @@ public class Service {
             if (championName.equals(champion.getName())) {
                 continue;
             }
-            double tmp = averageChampionRank(champion.getName(), position);
+            double tmp = averageChampionRank(champion.getName(), duo);
             if (tmp >= 1.0 && tmp < rank) {
                 rank = tmp;
                 result = champion;

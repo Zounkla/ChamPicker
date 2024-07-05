@@ -1,8 +1,6 @@
 package org.example.champicker.model.entity;
 
 import jakarta.persistence.*;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import org.hibernate.annotations.Type;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +14,10 @@ public class MatchUp {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @ManyToOne
+    @JoinColumn(name = "duo")
+    private Duo duo;
 
     @ManyToOne
     @JoinColumn(name = "first_champion_name")
@@ -65,4 +67,11 @@ public class MatchUp {
         this.tops = tops;
     }
 
+    public Duo getDuo() {
+        return duo;
+    }
+
+    public void setDuo(Duo duo) {
+        this.duo = duo;
+    }
 }

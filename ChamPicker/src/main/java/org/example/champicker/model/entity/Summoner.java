@@ -1,6 +1,12 @@
-package org.example.champicker.model.dto;
+package org.example.champicker.model.entity;
 
+import jakarta.persistence.*;
+
+@Entity
 public class Summoner {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
     private String gameName;
 

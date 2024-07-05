@@ -2,6 +2,7 @@ package org.example.champicker.model.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -10,6 +11,17 @@ public class Match {
 
     @Id
     private String matchId;
+
+    @ManyToOne
+    private Summoner summoner;
+
+    public Summoner getSummoner() {
+        return summoner;
+    }
+
+    public void setSummoner(Summoner summoner) {
+        this.summoner = summoner;
+    }
 
     public Match() {}
 
