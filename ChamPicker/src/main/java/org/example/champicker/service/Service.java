@@ -101,6 +101,8 @@ public class Service {
     public void saveMatch(String matchId, String puuid, String secondPuuid,
                           Summoner firstSummoner, Summoner secondSummoner) throws IOException {
         matchId = matchId.replaceAll("\"", "");
+        summonerRepository.save(firstSummoner);
+        summonerRepository.save(secondSummoner);
         if (matchRepository.findByMatchIdAndSummoner(matchId, firstSummoner).isPresent()) {
             return;
         }
@@ -151,8 +153,6 @@ public class Service {
                 }
             }
         }
-        summonerRepository.save(firstSummoner);
-        summonerRepository.save(secondSummoner);
         Optional<Duo> duo = duoRepository.findByFirstSummonerAndSecondSummoner(firstSummoner, secondSummoner);
         Duo newDuo = duo.orElseGet(Duo::new);
         newDuo.setFirstSummoner(firstSummoner);
