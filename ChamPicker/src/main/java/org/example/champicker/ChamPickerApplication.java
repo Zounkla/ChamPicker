@@ -1,18 +1,14 @@
 package org.example.champicker;
 
 import com.merakianalytics.orianna.Orianna;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
-import org.springframework.core.io.FileSystemResource;
-
 import org.springframework.stereotype.Component;
 
 @SpringBootApplication
 @Component
 public class ChamPickerApplication {
-	private static final String riotAPIKey = "RGAPI-6ff99b84-1ebf-4e00-9abe-b431de142633";
+	private static final String riotAPIKey = "<your API key>";
 	public static void main(String[] args) {
 		Orianna.loadConfiguration("config.json");
 		Orianna.setRiotAPIKey(riotAPIKey);
