@@ -101,8 +101,22 @@ public class Service {
     public void saveMatch(String matchId, String puuid, String secondPuuid,
                           Summoner firstSummoner, Summoner secondSummoner) throws IOException {
         matchId = matchId.replaceAll("\"", "");
-        summonerRepository.save(firstSummoner);
-        summonerRepository.save(secondSummoner);
+        Optional<Summoner> optionalSummoner = summonerRepository.findByGameNameAndGameTag(
+                firstSummoner.getGameName(), firstSummoner.getGameTag()
+        );
+        if (optionalSummoner.isEmpty()) {
+            summonerRepository.save(firstSummoner);
+        } else {
+            firstSummoner = optionalSummoner.get();
+        }
+        optionalSummoner = summonerRepository.findByGameNameAndGameTag(
+                secondSummoner.getGameName(), secondSummoner.getGameTag()
+        );
+        if (optionalSummoner.isEmpty()) {
+            summonerRepository.save(secondSummoner);
+        } else {
+            secondSummoner = optionalSummoner.get();
+        }
         if (matchRepository.findByMatchIdAndSummoner(matchId, firstSummoner).isPresent()) {
             return;
         }
@@ -183,6 +197,8 @@ public class Service {
             firstSummoner.setGameName(oldDuo.getFirstSummoner().getGameName());
             firstSummoner.setGameTag(oldDuo.getFirstSummoner().getGameTag());
             summonerRepository.save(firstSummoner);
+        } else {
+            firstSummoner = optionalSummoner.get();
         }
         optionalSummoner = summonerRepository.findByGameNameAndGameTag(
                 oldDuo.getSecondSummoner().getGameName(), oldDuo.getSecondSummoner().getGameTag()
@@ -193,9 +209,11 @@ public class Service {
             secondSummoner.setGameName(oldDuo.getSecondSummoner().getGameName());
             secondSummoner.setGameTag(oldDuo.getSecondSummoner().getGameTag());
             summonerRepository.save(secondSummoner);
+        } else {
+            secondSummoner = optionalSummoner.get();
         }
-        Optional<Duo> optDuo = duoRepository.findByFirstSummonerAndSecondSummoner(oldDuo.getFirstSummoner(),
-                oldDuo.getSecondSummoner());
+        Optional<Duo> optDuo = duoRepository.findByFirstSummonerAndSecondSummoner(firstSummoner,
+                secondSummoner);
         Duo duo;
         if (optDuo.isEmpty()) {
             duo = new Duo();
